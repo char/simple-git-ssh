@@ -1,0 +1,16 @@
+.{
+    .name = .simple_git_ssh,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .shlex = .{
+            .path = "./vendor/shlex",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+    .fingerprint = 0x383fa1d169a7d4cc,
+}
