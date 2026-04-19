@@ -1,5 +1,5 @@
 {
-  description = "simple-ssh-git dev shell";
+  description = "simple-git-ssh dev shell & package";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/master"; # until nixos-unstable tracks zig 0.16
