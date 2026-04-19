@@ -1,3 +1,0 @@
-[submodule "vendor/shlex"]
-	path = vendor/shlex
-	url = https://github.com/char/shlex.git
