@@ -26,14 +26,20 @@ pub fn main(init: std.process.Init) !void {
 
     const repo_path_raw = tokens[tokens.len - 1];
 
-    var repo_path_buf: [std.Io.Dir.max_path_bytes]u8 = undefined;
-    const repo_path = blk: {
-        if (std.fs.path.isAbsolute(repo_path_raw)) {
-            break :blk repo_path_raw;
-        }
-        const home = init.environ_map.get("HOME") orelse ".";
-        break :blk try std.fmt.bufPrint(&repo_path_buf, "{s}/{s}", .{ home, repo_path_raw });
+    const home = init.environ_map.get("HOME") orelse {
+        std.log.err("HOME not set", .{});
+        std.process.exit(1);
     };
+
+    const repo_path = try std.fs.path.resolve(allocator, &.{ home, repo_path_raw });
+    defer allocator.free(repo_path);
+
+    if (!std.mem.startsWith(u8, repo_path, home) or
+        (repo_path.len > home.len and repo_path[home.len] != '/'))
+    {
+        std.log.err("repo path escapes HOME: {s}", .{repo_path_raw});
+        std.process.exit(1);
+    }
 
     std.Io.Dir.accessAbsolute(io, repo_path, .{}) catch {
         std.log.info("auto-initializing bare repo at {s}", .{repo_path});
