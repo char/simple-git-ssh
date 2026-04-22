@@ -19,9 +19,12 @@ pub fn main(init: std.process.Init) !void {
         allocator.free(tokens);
     }
 
-    // must be an invocation of git-receive-pack with the path (therefore 2 tokens)
-    if (tokens.len < 2 or !std.mem.eql(u8, tokens[0], "git-receive-pack")) {
-        return execGitShell(allocator, io, cmd);
+    const is_receive_pack = std.mem.eql(u8, tokens[0], "git-receive-pack");
+    const is_upload_pack = std.mem.eql(u8, tokens[0], "git-upload-pack");
+
+    if (tokens.len < 2 or (!is_receive_pack and !is_upload_pack)) {
+        std.log.err("disallowed command: {s}", .{cmd});
+        std.process.exit(1);
     }
 
     const repo_path_raw = tokens[tokens.len - 1];
@@ -41,18 +44,20 @@ pub fn main(init: std.process.Init) !void {
         std.process.exit(1);
     }
 
-    std.Io.Dir.accessAbsolute(io, repo_path, .{}) catch {
-        std.log.info("auto-initializing bare repo at {s}", .{repo_path});
-        const result = try std.process.run(allocator, io, .{
-            .argv = &.{ "git", "init", "--bare", repo_path },
-        });
-        defer allocator.free(result.stdout);
-        defer allocator.free(result.stderr);
-        if (result.term != .exited or result.term.exited != 0) {
-            std.log.err("git init --bare failed: {s}", .{result.stderr});
-            std.process.exit(1);
-        }
-    };
+    if (is_receive_pack) {
+        std.Io.Dir.accessAbsolute(io, repo_path, .{}) catch {
+            std.log.info("auto-initializing bare repo at {s}", .{repo_path});
+            const result = try std.process.run(allocator, io, .{
+                .argv = &.{ "git", "init", "--bare", repo_path },
+            });
+            defer allocator.free(result.stdout);
+            defer allocator.free(result.stderr);
+            if (result.term != .exited or result.term.exited != 0) {
+                std.log.err("git init --bare failed: {s}", .{result.stderr});
+                std.process.exit(1);
+            }
+        };
+    }
 
     return execGitShell(allocator, io, cmd);
 }
