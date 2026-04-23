@@ -34,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
         std.process.exit(1);
     };
 
-    const repo_path = try std.fs.path.resolve(allocator, &.{ home, repo_path_raw });
+    const repo_path = try expandPath(allocator, home, repo_path_raw);
     defer allocator.free(repo_path);
 
     if (!std.mem.startsWith(u8, repo_path, home) or
@@ -60,6 +60,17 @@ pub fn main(init: std.process.Init) !void {
     }
 
     return execGitShell(allocator, io, cmd);
+}
+
+// im pretty sure this is what git expand user path does. wordexp from posix is overkill
+fn expandPath(allocator: std.mem.Allocator, home: []const u8, path: []const u8) ![]const u8 {
+    if (std.mem.startsWith(u8, path, "~/")) {
+        return std.fs.path.resolve(allocator, &.{ home, path[2..] });
+    } else if (std.mem.eql(u8, path, "~")) {
+        return allocator.dupe(u8, home);
+    } else {
+        return std.fs.path.resolve(allocator, &.{path});
+    }
 }
 
 fn execGitShell(allocator: std.mem.Allocator, io: std.Io, cmd: []const u8) !void {
