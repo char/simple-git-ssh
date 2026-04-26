@@ -47,6 +47,10 @@ pub fn main(init: std.process.Init) !void {
     if (is_receive_pack) {
         std.Io.Dir.accessAbsolute(io, repo_path, .{}) catch {
             std.log.info("auto-initializing bare repo at {s}", .{repo_path});
+            std.Io.Dir.createDirPath(.cwd(), io, repo_path) catch |err| {
+                std.log.err("failed to create repo directory: {}", .{err});
+                std.process.exit(1);
+            };
             const result = try std.process.run(allocator, io, .{
                 .argv = &.{ "git", "init", "--bare", repo_path },
             });
@@ -69,7 +73,7 @@ fn expandPath(allocator: std.mem.Allocator, home: []const u8, path: []const u8) 
     } else if (std.mem.eql(u8, path, "~")) {
         return allocator.dupe(u8, home);
     } else {
-        return std.fs.path.resolve(allocator, &.{path});
+        return std.fs.path.resolve(allocator, &.{ home, path });
     }
 }
 
